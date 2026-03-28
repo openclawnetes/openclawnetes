@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-config
+  namespace: openclaw
+  labels:
+    app: openclaw
+data:
+  AGENTS.md: |
+    # OpenClaw
+    Internal team gateway.
+    Do not expose publicly.
+  openclaw.json: |
+    {
+      "gateway": {
+        "mode": "local",
+        "bind": "lan",
+        "port": 18789,
+        "trustedProxies": [],
+        "auth": {
+          "mode": "token"
+        },
+        "controlUi": {
+          "enabled": true
+        }
+      },
+      "agents": {
+        "defaults": {
+          "workspace": "~/.openclaw/workspace"
+        },
+        "list": [
+          {
+            "id": "default",
+            "name": "OpenClaw Assistant",
+            "workspace": "~/.openclaw/workspace"
+          }
+        ]
+      },
+      "models": {
+        "providers": {
+          "anthropic": {
+            "apiKey": "${ANTHROPIC_API_KEY}",
+            "baseUrl": "https://api.anthropic.com/v1",
+            "models": [
+              { "id": "claude-sonnet-4-6", "name": "claude-sonnet-4-6" },
+              { "id": "claude-opus-4-6", "name": "claude-opus-4-6" }
+            ]
+          }
+        }
+      },
+      "channels": {
+        "slack": {
+          "enabled": false
+        }
+      },
+      "cron": { "enabled": false }
+    }
