@@ -1,0 +1,29 @@
+graph TD
+    subgraph EKS["EKS Cluster"]
+        subgraph NS["Namespace: openclaw"]
+            subgraph Deploy["Deployment: openclaw<br/>(replicas: 1, strategy: Recreate)"]
+                Init["Init Container<br/>(busybox:1.37)<br/>Copies config files<br/>into home dir"]
+                Gateway["Container: gateway<br/>(openclaw:slim)<br/>Listens on :18789<br/>/healthz /readyz"]
+                Init -->|runs before| Gateway
+            end
+
+            SVC["Service (ClusterIP)<br/>:18789"]
+            Gateway --> SVC
+
+            CM["ConfigMap<br/>openclaw-config<br/>- openclaw.json<br/>- AGENTS.md"]
+            SEC1["Secret<br/>openclaw-gateway-token<br/>OPENCLAW_GATEWAY_TOKEN"]
+            SEC2["Secret<br/>claude-api-key<br/>ANTHROPIC_API_KEY"]
+            PVC["PVC: openclaw-data<br/>10Gi, ReadWriteOnce"]
+
+            CM -.->|volume mount| Init
+            SEC1 -.->|env var| Gateway
+            SEC2 -.->|env var| Gateway
+            PVC -.->|mount: /home/node/.openclaw| Gateway
+        end
+    end
+
+    EBS["EBS Volume<br/>(gp2/gp3)"]
+    PVC --- EBS
+
+    API["Anthropic API<br/>api.anthropic.com/v1"]
+    Gateway -->|Outbound HTTPS| API
