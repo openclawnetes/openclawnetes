@@ -54,15 +54,29 @@ data:
         }
       },
       "cron": { "enabled": false },
+      "plugins": {
+        "allow": ["diagnostics-otel"],
+        "entries": {
+          "diagnostics-otel": {
+            "enabled": true
+          }
+        }
+      },
       "diagnostics": {
+        "enabled": true,
         "otel": {
           "enabled": true,
-          "endpoint": "http://localhost:4318",
+          "endpoint": "http://datadog.datadog.svc.cluster.local:4318",
           "protocol": "http/protobuf",
           "serviceName": "openclaw",
           "traces": false,
           "metrics": true,
-          "logs": false
+          "logs": false,
+          "flushIntervalMs": 5000
         }
+      },
+      "meta": {
+        "lastTouchedVersion": "2026.3.24",
+        "lastTouchedAt": "2026-03-28T18:00:00.000Z"
       }
     }

@@ -18,7 +18,7 @@ npx @mermaid-js/mermaid-cli -i aws/assets/architecture.mmd -o aws/assets/archite
 
 ### Pod structure
 
-The deployment runs a single pod with two containers:
+The deployment runs a single pod with an init container and one main container:
 
 1. **Init container** (`busybox:1.37`) — copies `openclaw.json` and `AGENTS.md` from the ConfigMap into the persistent home directory at `/home/node/.openclaw/`. This runs once before the main container starts.
 
@@ -71,16 +71,16 @@ The pod follows a hardened security posture:
 ## Networking
 
 - **Inbound**: ClusterIP service on port 18789 (cluster-internal only)
-- **Outbound**: HTTPS to `api.anthropic.com/v1` for Claude API calls
+- **Outbound**: HTTPS to `api.anthropic.com/v1` for Claude API calls; OTLP/HTTP to `datadog.datadog.svc.cluster.local:4318` for metrics
 - No Ingress is configured by default — the gateway is not exposed to the internet
 
 ## Observability
 
-OpenClaw's built-in `diagnostics-otel` plugin exports OpenTelemetry metrics via OTLP (http/protobuf). An OTel Collector runs as a sidecar in the same pod to receive these metrics.
+OpenClaw's built-in `diagnostics-otel` plugin exports OpenTelemetry metrics via OTLP (http/protobuf) directly to the Datadog agent running in the cluster.
 
 ### How it works
 
-The gateway sends metrics to `http://localhost:4318` (the sidecar). The collector batches and forwards them to your backend. Currently the collector is configured with a `debug` exporter (logs to stdout) — replace this with your preferred backend (Prometheus, Grafana Cloud, Datadog, etc.) in `otel-collector-config.yaml`.
+The gateway sends metrics directly to `http://datadog.datadog.svc.cluster.local:4318` using standard OTEL environment variables and the `diagnostics.otel` config block. No sidecar collector is needed — the Datadog agent accepts OTLP natively.
 
 ### Available metrics
 

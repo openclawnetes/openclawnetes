@@ -78,6 +78,18 @@ spec:
                 secretKeyRef:
                   name: claude-api-key
                   key: ANTHROPIC_API_KEY
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://datadog.datadog.svc.cluster.local:4318"
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "http/protobuf"
+            - name: OTEL_SERVICE_NAME
+              value: "openclaw"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_TRACES_EXPORTER
+              value: "none"
+            - name: OTEL_LOGS_EXPORTER
+              value: "none"
           resources:
             requests:
               memory: 512Mi
@@ -108,34 +120,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-        - name: otel-collector
-          image: otel/opentelemetry-collector:0.115.0
-          imagePullPolicy: IfNotPresent
-          args:
-            - --config=/etc/otel/config.yaml
-          ports:
-            - name: otlp-http
-              containerPort: 4318
-              protocol: TCP
-          resources:
-            requests:
-              memory: 64Mi
-              cpu: 50m
-            limits:
-              memory: 128Mi
-              cpu: 200m
-          volumeMounts:
-            - name: otel-config
-              mountPath: /etc/otel
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
       volumes:
         - name: openclaw-home
           persistentVolumeClaim:
@@ -145,6 +129,3 @@ spec:
             name: openclaw-config
         - name: tmp-volume
           emptyDir: {}
-        - name: otel-config
-          configMap:
-            name: otel-collector-config
