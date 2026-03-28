@@ -66,7 +66,7 @@ data:
         "enabled": true,
         "otel": {
           "enabled": true,
-          "endpoint": "http://datadog.datadog.svc.cluster.local:4318",
+          "endpoint": "http://otel-collector.openclaw.svc.cluster.local:4318",
           "protocol": "http/protobuf",
           "serviceName": "openclaw",
           "traces": false,

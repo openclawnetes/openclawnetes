@@ -78,8 +78,10 @@ spec:
                 secretKeyRef:
                   name: claude-api-key
                   key: ANTHROPIC_API_KEY
+            # Set this to any OTLP-compatible endpoint (e.g. Datadog agent,
+            # Grafana Alloy, or a standalone OTel Collector).
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://datadog.datadog.svc.cluster.local:4318"
+              value: "http://otel-collector.openclaw.svc.cluster.local:4318"
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
               value: "http/protobuf"
             - name: OTEL_SERVICE_NAME

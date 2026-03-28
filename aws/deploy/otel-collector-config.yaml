@@ -19,14 +19,13 @@ data:
         send_batch_size: 1024
 
     exporters:
-      otlphttp/datadog_agent:
-        endpoint: "http://datadog.datadog.svc.cluster.local:4318"
-        tls:
-          insecure: true
+      # Replace with your backend: otlphttp, prometheusremotewrite, etc.
+      debug:
+        verbosity: basic
 
     service:
       pipelines:
         metrics:
           receivers: [otlp]
           processors: [batch]
-          exporters: [otlphttp/datadog_agent]
+          exporters: [debug]

@@ -71,16 +71,16 @@ The pod follows a hardened security posture:
 ## Networking
 
 - **Inbound**: ClusterIP service on port 18789 (cluster-internal only)
-- **Outbound**: HTTPS to `api.anthropic.com/v1` for Claude API calls; OTLP/HTTP to `datadog.datadog.svc.cluster.local:4318` for metrics
+- **Outbound**: HTTPS to `api.anthropic.com/v1` for Claude API calls; OTLP/HTTP to the configured metrics endpoint
 - No Ingress is configured by default — the gateway is not exposed to the internet
 
 ## Observability
 
-OpenClaw's built-in `diagnostics-otel` plugin exports OpenTelemetry metrics via OTLP (http/protobuf) directly to the Datadog agent running in the cluster.
+OpenClaw's built-in `diagnostics-otel` plugin exports OpenTelemetry metrics via OTLP (http/protobuf) to any OTLP-compatible endpoint.
 
 ### How it works
 
-The gateway sends metrics directly to `http://datadog.datadog.svc.cluster.local:4318` using standard OTEL environment variables and the `diagnostics.otel` config block. No sidecar collector is needed — the Datadog agent accepts OTLP natively.
+The gateway sends metrics to the endpoint configured in `OTEL_EXPORTER_OTLP_ENDPOINT` (and mirrored in `diagnostics.otel.endpoint` in `openclaw.json`). Point this at any OTLP-compatible receiver — a Datadog agent, Grafana Alloy, a standalone OTel Collector, etc. An example OTel Collector config is provided in `otel-collector-config.yaml`.
 
 ### Available metrics
 
