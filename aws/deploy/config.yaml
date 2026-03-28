@@ -53,5 +53,16 @@ data:
           "enabled": false
         }
       },
-      "cron": { "enabled": false }
+      "cron": { "enabled": false },
+      "diagnostics": {
+        "otel": {
+          "enabled": true,
+          "endpoint": "http://localhost:4318",
+          "protocol": "http/protobuf",
+          "serviceName": "openclaw",
+          "traces": false,
+          "metrics": true,
+          "logs": false
+        }
+      }
     }

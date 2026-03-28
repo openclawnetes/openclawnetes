@@ -74,6 +74,35 @@ The pod follows a hardened security posture:
 - **Outbound**: HTTPS to `api.anthropic.com/v1` for Claude API calls
 - No Ingress is configured by default — the gateway is not exposed to the internet
 
+## Observability
+
+OpenClaw's built-in `diagnostics-otel` plugin exports OpenTelemetry metrics via OTLP (http/protobuf). An OTel Collector runs as a sidecar in the same pod to receive these metrics.
+
+### How it works
+
+The gateway sends metrics to `http://localhost:4318` (the sidecar). The collector batches and forwards them to your backend. Currently the collector is configured with a `debug` exporter (logs to stdout) — replace this with your preferred backend (Prometheus, Grafana Cloud, Datadog, etc.) in `otel-collector-config.yaml`.
+
+### Available metrics
+
+| Metric | Type | Description |
+|---|---|---|
+| `openclaw.tokens` | Counter | Token usage by type (input, output, cache_read, cache_write) |
+| `openclaw.cost.usd` | Counter | Estimated model costs in USD |
+| `openclaw.message.queued` | Counter | Messages queued for processing |
+| `openclaw.message.processed` | Counter | Messages processed by outcome |
+| `openclaw.run.attempt` | Counter | Agent run attempt counts |
+| `openclaw.session.state` | Counter | Session state transitions |
+| `openclaw.session.stuck` | Counter | Sessions stuck in processing |
+| `openclaw.run.duration_ms` | Histogram | Agent run duration |
+| `openclaw.context.tokens` | Histogram | Context window size and usage |
+| `openclaw.message.duration_ms` | Histogram | Message processing duration |
+| `openclaw.queue.depth` | Histogram | Queue depth |
+| `openclaw.queue.wait_ms` | Histogram | Queue wait time before execution |
+
+### Configuration
+
+OTel is configured in `openclaw.json` under `diagnostics.otel`. Only metrics are enabled by default — traces and logs can be turned on if needed.
+
 ## Current Limitations
 
 - **Local access requires port-forwarding.** The gateway service is ClusterIP-only, so accessing OpenClaw from a local machine is not straightforward. You need to port-forward the service to localhost first:
