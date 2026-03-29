@@ -1,6 +1,6 @@
 # OpenClawNetes
 
-OpenClawNetes is about running [OpenClaw](https://openclaw.ai/) on Kubernetes.
+OpenClawNetes is all about running [OpenClaw](https://openclaw.ai/) on Kubernetes.
 
 ## Why?
 
