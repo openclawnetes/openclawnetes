@@ -18,7 +18,7 @@ npx @mermaid-js/mermaid-cli -i aws/assets/architecture.mmd -o aws/assets/archite
 
 ### Pod structure
 
-The deployment runs a single pod with two containers:
+The deployment runs a single pod with an init container and one main container:
 
 1. **Init container** (`busybox:1.37`) — copies `openclaw.json` and `AGENTS.md` from the ConfigMap into the persistent home directory at `/home/node/.openclaw/`. This runs once before the main container starts.
 
@@ -71,8 +71,40 @@ The pod follows a hardened security posture:
 ## Networking
 
 - **Inbound**: ClusterIP service on port 18789 (cluster-internal only)
-- **Outbound**: HTTPS to `api.anthropic.com/v1` for Claude API calls
+- **Outbound**: HTTPS to `api.anthropic.com/v1` for Claude API calls; OTLP/HTTP to the configured metrics endpoint
 - No Ingress is configured by default — the gateway is not exposed to the internet
+
+## Observability
+
+OpenClaw's built-in `diagnostics-otel` plugin can export OpenTelemetry metrics via OTLP (http/protobuf) to any OTLP-compatible endpoint. **Disabled by default** — enable it when you have a collector endpoint ready.
+
+### How to enable
+
+1. In `config.yaml`, set `diagnostics.enabled` and `diagnostics.otel.enabled` to `true` and update the endpoint.
+2. In `deployment.yaml`, set `OTEL_METRICS_EXPORTER` to `"otlp"` and `OTEL_EXPORTER_OTLP_ENDPOINT` to your collector.
+
+Point these at any OTLP-compatible receiver — a Datadog agent, Grafana Alloy, a standalone OTel Collector, etc. An example OTel Collector config is provided in `otel-collector-config.yaml`.
+
+### Available metrics
+
+| Metric | Type | Description |
+|---|---|---|
+| `openclaw.tokens` | Counter | Token usage by type (input, output, cache_read, cache_write) |
+| `openclaw.cost.usd` | Counter | Estimated model costs in USD |
+| `openclaw.message.queued` | Counter | Messages queued for processing |
+| `openclaw.message.processed` | Counter | Messages processed by outcome |
+| `openclaw.run.attempt` | Counter | Agent run attempt counts |
+| `openclaw.session.state` | Counter | Session state transitions |
+| `openclaw.session.stuck` | Counter | Sessions stuck in processing |
+| `openclaw.run.duration_ms` | Histogram | Agent run duration |
+| `openclaw.context.tokens` | Histogram | Context window size and usage |
+| `openclaw.message.duration_ms` | Histogram | Message processing duration |
+| `openclaw.queue.depth` | Histogram | Queue depth |
+| `openclaw.queue.wait_ms` | Histogram | Queue wait time before execution |
+
+### Configuration
+
+OTel is configured in `openclaw.json` under `diagnostics.otel`. Only metrics are enabled by default — traces and logs can be turned on if needed.
 
 ## Current Limitations
 
