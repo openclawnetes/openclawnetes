@@ -63,9 +63,9 @@ data:
         }
       },
       "diagnostics": {
-        "enabled": true,
+        "enabled": false,
         "otel": {
-          "enabled": true,
+          "enabled": false,
           "endpoint": "http://otel-collector.openclaw.svc.cluster.local:4318",
           "protocol": "http/protobuf",
           "serviceName": "openclaw",

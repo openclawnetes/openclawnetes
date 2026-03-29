@@ -76,11 +76,14 @@ The pod follows a hardened security posture:
 
 ## Observability
 
-OpenClaw's built-in `diagnostics-otel` plugin exports OpenTelemetry metrics via OTLP (http/protobuf) to any OTLP-compatible endpoint.
+OpenClaw's built-in `diagnostics-otel` plugin can export OpenTelemetry metrics via OTLP (http/protobuf) to any OTLP-compatible endpoint. **Disabled by default** — enable it when you have a collector endpoint ready.
 
-### How it works
+### How to enable
 
-The gateway sends metrics to the endpoint configured in `OTEL_EXPORTER_OTLP_ENDPOINT` (and mirrored in `diagnostics.otel.endpoint` in `openclaw.json`). Point this at any OTLP-compatible receiver — a Datadog agent, Grafana Alloy, a standalone OTel Collector, etc. An example OTel Collector config is provided in `otel-collector-config.yaml`.
+1. In `config.yaml`, set `diagnostics.enabled` and `diagnostics.otel.enabled` to `true` and update the endpoint.
+2. In `deployment.yaml`, set `OTEL_METRICS_EXPORTER` to `"otlp"` and `OTEL_EXPORTER_OTLP_ENDPOINT` to your collector.
+
+Point these at any OTLP-compatible receiver — a Datadog agent, Grafana Alloy, a standalone OTel Collector, etc. An example OTel Collector config is provided in `otel-collector-config.yaml`.
 
 ### Available metrics
 

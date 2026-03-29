@@ -78,8 +78,10 @@ spec:
                 secretKeyRef:
                   name: claude-api-key
                   key: ANTHROPIC_API_KEY
-            # Set this to any OTLP-compatible endpoint (e.g. Datadog agent,
-            # Grafana Alloy, or a standalone OTel Collector).
+            # --- OpenTelemetry (disabled by default) ---
+            # To enable metrics export, set OTEL_METRICS_EXPORTER to "otlp"
+            # and OTEL_EXPORTER_OTLP_ENDPOINT to any OTLP-compatible receiver
+            # (e.g. Datadog agent, Grafana Alloy, standalone OTel Collector).
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://otel-collector.openclaw.svc.cluster.local:4318"
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
@@ -87,7 +89,7 @@ spec:
             - name: OTEL_SERVICE_NAME
               value: "openclaw"
             - name: OTEL_METRICS_EXPORTER
-              value: "otlp"
+              value: "none"
             - name: OTEL_TRACES_EXPORTER
               value: "none"
             - name: OTEL_LOGS_EXPORTER
