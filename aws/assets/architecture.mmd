@@ -1,23 +1,37 @@
 graph TD
     subgraph EKS["EKS Cluster"]
         subgraph NS["Namespace: openclaw"]
-            subgraph Deploy["Deployment: openclaw<br/>(replicas: 1, strategy: Recreate)"]
+            subgraph Deploy["Deployment: gateway<br/>(replicas: 1, strategy: Recreate)"]
                 Init["Init Container<br/>(busybox:1.37)<br/>Copies config files<br/>into home dir"]
-                Gateway["Container: gateway<br/>(openclaw:slim)<br/>Listens on :18789<br/>/healthz /readyz"]
+                Gateway["Container: gateway<br/>(openclaw:latest)<br/>Listens on :18789<br/>/healthz /readyz"]
+                AutoApprove["Sidecar: auto-approve<br/>(openclaw:latest)<br/>Approves node pairing<br/>Cleans stale nodes"]
                 Init -->|runs before| Gateway
+                Init -->|runs before| AutoApprove
+            end
+
+            subgraph SS["StatefulSet: node<br/>(replicas: 1)"]
+                NodeInit["Init Container<br/>(busybox:1.37)<br/>Copies exec-approvals"]
+                Node["Container: openclaw-node<br/>(openclaw:latest)<br/>Connects via WebSocket<br/>Executes tools"]
+                NodeInit -->|runs before| Node
             end
 
             SVC["Service (ClusterIP)<br/>:18789"]
             Gateway --> SVC
+            Node -->|WebSocket| SVC
 
             CM["ConfigMap<br/>openclaw-config<br/>- openclaw.json<br/>- AGENTS.md"]
+            NACM["ConfigMap<br/>openclaw-node-approvals<br/>- exec-approvals.json"]
             SEC1["Secret<br/>openclaw-gateway-token<br/>OPENCLAW_GATEWAY_TOKEN"]
             SEC2["Secret<br/>claude-api-key<br/>ANTHROPIC_API_KEY"]
             PVC["PVC: openclaw-data<br/>10Gi, ReadWriteOnce"]
 
             CM -.->|volume mount| Init
+            NACM -.->|volume mount| NodeInit
             SEC1 -.->|env var| Gateway
+            SEC1 -.->|env var| AutoApprove
+            SEC1 -.->|env var| Node
             SEC2 -.->|env var| Gateway
+            SEC2 -.->|env var| Node
             PVC -.->|mount: /home/node/.openclaw| Gateway
         end
     end
