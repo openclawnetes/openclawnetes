@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: node
+  namespace: openclaw
+  labels:
+    app: node
+spec:
+  serviceName: node
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node
+  template:
+    metadata:
+      labels:
+        app: node
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: init-approvals
+          image: busybox:1.37
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              cp /config/exec-approvals.json /home/node/.openclaw/exec-approvals.json
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 50m
+          volumeMounts:
+            - name: openclaw-home
+              mountPath: /home/node/.openclaw
+            - name: node-approvals
+              mountPath: /config
+      containers:
+        - name: openclaw-node
+          image: ghcr.io/openclaw/openclaw:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              trap 'echo "Shutting down..."; exit 0' SIGTERM SIGINT
+              while true; do
+                echo "Connecting to gateway..."
+                openclaw node run \
+                  --host openclaw.openclaw.svc.cluster.local \
+                  --port 18789 \
+                  --display-name "$(hostname)" || true
+                echo "Disconnected. Retrying in 10s..."
+                sleep 10
+              done
+          env:
+            - name: HOME
+              value: /home/node
+            - name: OPENCLAW_CONFIG_DIR
+              value: /home/node/.openclaw
+            - name: NODE_ENV
+              value: production
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-gateway-token
+                  key: OPENCLAW_GATEWAY_TOKEN
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: claude-api-key
+                  key: ANTHROPIC_API_KEY
+            - name: OPENCLAW_ALLOW_INSECURE_PRIVATE_WS
+              value: "1"
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: "1"
+          volumeMounts:
+            - name: openclaw-home
+              mountPath: /home/node/.openclaw
+            - name: tmp-volume
+              mountPath: /tmp
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: openclaw-home
+          emptyDir: {}
+        - name: node-approvals
+          configMap:
+            name: openclaw-node-approvals
+        - name: tmp-volume
+          emptyDir: {}

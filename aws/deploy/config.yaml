@@ -22,6 +22,14 @@ data:
         },
         "controlUi": {
           "enabled": true
+        },
+        "nodes": {
+          "allowCommands": ["system.run", "system.which"]
+        }
+      },
+      "tools": {
+        "exec": {
+          "host": "node"
         }
       },
       "agents": {
@@ -35,7 +43,12 @@ data:
           {
             "id": "default",
             "name": "OpenClaw Assistant",
-            "workspace": "~/.openclaw/workspace"
+            "workspace": "~/.openclaw/workspace",
+            "tools": {
+              "exec": {
+                "security": "full"
+              }
+            }
           }
         ]
       },

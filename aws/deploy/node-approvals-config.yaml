@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-node-approvals
+  namespace: openclaw
+  labels:
+    app: node
+data:
+  exec-approvals.json: |
+    {
+      "version": 1,
+      "defaults": {
+        "security": "full",
+        "ask": "off",
+        "askFallback": "full"
+      }
+    }

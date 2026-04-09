@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openclaw
+  name: gateway
   namespace: openclaw
   labels:
-    app: openclaw
+    app: gateway
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: openclaw
+      app: gateway
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: openclaw
+        app: gateway
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -47,11 +47,10 @@ spec:
               mountPath: /config
       containers:
         - name: gateway
-          image: ghcr.io/openclaw/openclaw:slim
+          image: ghcr.io/openclaw/openclaw:latest
           imagePullPolicy: IfNotPresent
           command:
-            - node
-            - /app/dist/index.js
+            - openclaw
             - gateway
             - run
           ports:
@@ -102,6 +101,78 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5
+          volumeMounts:
+            - name: openclaw-home
+              mountPath: /home/node/.openclaw
+            - name: tmp-volume
+              mountPath: /tmp
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+        - name: auto-approve
+          image: ghcr.io/openclaw/openclaw:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              # One-time cleanup: remove nodes disconnected for more than 10 minutes
+              echo "Cleaning up stale disconnected nodes..."
+              disconnected=$(openclaw nodes status --json 2>/dev/null \
+                | node -e "
+                  let d='';
+                  process.stdin.on('data',c=>d+=c);
+                  process.stdin.on('end',()=>{
+                    try{
+                      const now=Date.now();
+                      JSON.parse(d).nodes
+                        .filter(n=>!n.connected && n.approvedAtMs && (now-n.approvedAtMs)>600000)
+                        .forEach(n=>console.log(n.nodeId));
+                    }catch(e){}
+                  });
+                ")
+              for id in $disconnected; do
+                echo "Removing stale disconnected node: $id"
+                openclaw devices remove "$id" 2>/dev/null || true
+              done
+
+              # Ongoing: auto-approve pending pairing requests
+              while true; do
+                pending=$(openclaw devices list --json 2>/dev/null \
+                  | node -e "
+                    let d='';
+                    process.stdin.on('data',c=>d+=c);
+                    process.stdin.on('end',()=>{
+                      try{JSON.parse(d).pending.forEach(p=>console.log(p.requestId))}
+                      catch(e){}
+                    });
+                  ")
+                for id in $pending; do
+                  echo "Auto-approving device: $id"
+                  openclaw devices approve "$id" 2>/dev/null || true
+                done
+                sleep 5
+              done
+          env:
+            - name: HOME
+              value: /home/node
+            - name: OPENCLAW_CONFIG_DIR
+              value: /home/node/.openclaw
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-gateway-token
+                  key: OPENCLAW_GATEWAY_TOKEN
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 100m
           volumeMounts:
             - name: openclaw-home
               mountPath: /home/node/.openclaw
